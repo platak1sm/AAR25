@@ -16,6 +16,8 @@ public class QuestionUI : MonoBehaviour
     public AudioClip[] audioClips; // 4 audio clips
     public GameObject paintingPanel; // PaintingPanel GameObject
     public GameObject audioPanel; // AudioPanel GameObject
+    public GameObject leaderboardPanel; // LeaderboardPanel GameObject
+    public TextMeshProUGUI leaderboardText; // Text to display leaderboard
     private AudioSource audioSource;
 
     private int currentPaintingIndex = 0;
@@ -266,7 +268,54 @@ public class QuestionUI : MonoBehaviour
         int score = (isPaintingCorrect ? 1 : 0) + (isAudioCorrect ? 1 : 0);
         resultText.text = $"Score: {score}/2";
 
-        // Disable further input
+        // Submit score to leaderboard
+        string playerName = $"Team_{System.DateTime.Now.Ticks % 10000:D4}"; // e.g., Player_1234
+        if (LeaderboardManager.Instance != null)
+        {
+            LeaderboardManager.Instance.SubmitScore(playerName, score, (success) =>
+            {
+                Debug.Log($"Score submission {(success ? "succeeded" : "failed")}: {playerName}, Score: {score}");
+            });
+        }
+        else
+        {
+            Debug.LogWarning("LeaderboardManager not found, score not submitted");
+        }
+
+        // Show leaderboard after 3 seconds
+        yield return new WaitForSeconds(3f);
+        ShowLeaderboard();
         enabled = false;
+    }
+
+    private void ShowLeaderboard()
+    {
+        resultText.gameObject.SetActive(false); // Hide score text
+        transform.GetChild(1).gameObject.SetActive(false); // Hide background
+        audioPanel.SetActive(false); // Hide audio panel
+
+        if (LeaderboardManager.Instance == null)
+        {
+            Debug.LogWarning("LeaderboardManager not found, cannot show leaderboard");
+            return;
+        }
+
+        LeaderboardManager.Instance.GetTopScores((entries) =>
+        {
+            System.Text.StringBuilder leaderboardDisplay = new System.Text.StringBuilder();
+            leaderboardDisplay.AppendLine("<size=36>AR Leaderboard</size>");
+            leaderboardDisplay.AppendLine("<size=24>Rank | Team | Score</size>");
+            leaderboardDisplay.AppendLine("-----------------------");
+
+            for (int i = 0; i < entries.Count; i++)
+            {
+                leaderboardDisplay.AppendLine($"{i + 1}. {entries[i].name} | {entries[i].score} points");
+            }
+
+            leaderboardText.text = leaderboardDisplay.ToString();
+            leaderboardPanel.transform.GetChild(0).gameObject.SetActive(true);
+            resultText.gameObject.SetActive(false); // Hide score text
+            Debug.Log($"Displayed AR leaderboard with {entries.Count} entries");
+        });
     }
 }
