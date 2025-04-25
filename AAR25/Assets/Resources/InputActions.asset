@@ -13,4 +13,5 @@ MonoBehaviour:
   m_Name: InputActions
   m_EditorClassIdentifier: 
   InputActionDefinitions: []
-  InputActionSets: []
+  InputActionSets:
+  - {fileID: 11400000, guid: c7933259dd5704772ada30834537e307, type: 2}
