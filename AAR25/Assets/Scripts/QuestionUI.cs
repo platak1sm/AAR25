@@ -3,8 +3,6 @@ using UnityEngine.UI;
 using TMPro;
 using System.Collections;
 using UnityEngine.InputSystem;
-using UnityEngine.XR;
-
 
 public class QuestionUI : MonoBehaviour
 {
@@ -29,8 +27,7 @@ public class QuestionUI : MonoBehaviour
     private bool isAudioCorrect = false;
     private int correctPaintingIndex = 0;
     private int correctAudioIndex = 0;
-    
-    
+
     private InputAction yButtonAction;
     private InputAction xButtonAction;
 
@@ -54,7 +51,6 @@ public class QuestionUI : MonoBehaviour
         audioSource.volume = 1.0f;
         audioSource.spatialBlend = 0.0f; // 2D audio
         audioSource.playOnAwake = false;
-        // DrawingPersistence.LoadDrawing(UnityEngine.SceneManagement.SceneManager.GetActiveScene().name, this); // Commented out: disable drawing loading
 
         // Validate paintingImages
         if (paintingImages == null || paintingImages.Length != 3)
@@ -129,14 +125,47 @@ public class QuestionUI : MonoBehaviour
         {
             Debug.LogWarning("AudioManager or sceneAudio not found. Using default correctAudioIndex: 0");
         }
+
         // Initialize UI
         UpdatePaintingDisplay();
         resultText.text = "Select the painting that inspired the first user. Go through each painting using button Y and press button X when you want to select it.";
-        Debug.Log($"Initialized QuestionUI. paintingImages.Length: {paintingImages.Length}, currentPaintingIndex: {currentPaintingIndex}, Left Controller Connected: false");
+        Debug.Log($"Initialized QuestionUI. paintingImages.Length: {paintingImages.Length}, currentPaintingIndex: {currentPaintingIndex}");
+
+        // Subscribe to TimeManager events to control input activation
+        if (TimeManager.Instance != null)
+        {
+            TimeManager.Instance.OnDrawingPhaseStarted += () =>
+            {
+                yButtonAction.Disable();
+                xButtonAction.Disable();
+                Debug.Log("QuestionUI: Drawing phase started, inputs disabled");
+            };
+            TimeManager.Instance.OnDrawingPhaseEnded += () =>
+            {
+                yButtonAction.Enable();
+                xButtonAction.Enable();
+                Debug.Log("QuestionUI: Drawing phase ended, inputs enabled");
+            };
+            // Set initial input state
+            if (!TimeManager.drawingCompleted)
+            {
+                yButtonAction.Disable();
+                xButtonAction.Disable();
+            }
+        }
+        else
+        {
+            Debug.LogWarning("TimeManager not found, QuestionUI inputs may be active during drawing phase");
+        }
     }
 
     void Update()
     {
+        // Only process inputs if QuestionUI is active and drawing phase is complete
+        if (!gameObject.activeSelf || !TimeManager.drawingCompleted)
+        {
+            return;
+        }
 
         // Skip input if coroutine is running (during feedback delay)
         if (correctText.gameObject.activeSelf || incorrectText.gameObject.activeSelf)
@@ -145,11 +174,11 @@ public class QuestionUI : MonoBehaviour
             return;
         }
 
-        // Y button (left controller) or debug key: Cycle options
+        // Y button: Cycle options
         bool yPressed = yButtonAction.WasPressedThisFrame() || Input.GetKeyDown(KeyCode.Y);
         if (yPressed)
         {
-            Debug.Log($"Y button pressed on right controller. selectingPainting: {selectingPainting}");
+            Debug.Log($"Y button pressed. selectingPainting: {selectingPainting}");
             if (selectingPainting)
             {
                 currentPaintingIndex = (currentPaintingIndex + 1) % paintingImages.Length;
@@ -174,17 +203,17 @@ public class QuestionUI : MonoBehaviour
                 resultText.text = $"Audio {currentAudioIndex + 1}. Confirm with X.";
                 Debug.Log($"Cycled audio. currentAudioIndex: {currentAudioIndex}");
             }
-        }else if (yButtonAction.IsPressed())
+        }
+        else if (yButtonAction.IsPressed())
         {
             Debug.Log("Y button held but not triggered (WasPressedThisFrame not satisfied)");
         }
 
-
-        // X button (left controller) or debug key: Select option
+        // X button: Select option
         bool xPressed = xButtonAction.WasPressedThisFrame() || Input.GetKeyDown(KeyCode.X);
         if (xPressed)
         {
-            Debug.Log("X button pressed on left controller");
+            Debug.Log("X button pressed");
             if (selectingPainting)
             {
                 selectedPaintingIndex = currentPaintingIndex;
@@ -200,16 +229,17 @@ public class QuestionUI : MonoBehaviour
                 Debug.Log($"Selected audio {selectedAudioIndex}. Correct: {isAudioCorrect}");
             }
         }
+        else if (xButtonAction.IsPressed())
+        {
+            Debug.Log("X button held but not triggered (WasPressedThisFrame not satisfied)");
+        }
     }
-
-
 
     void UpdatePaintingDisplay()
     {
         for (int i = 0; i < paintingImages.Length; i++)
         {
             bool isActive = i == currentPaintingIndex;
-            //paintingImages[i].gameObject.SetActive(isActive);
             paintingPanel.transform.GetChild(i).gameObject.SetActive(isActive);
             Debug.Log($"PaintingImage{i + 1} active: {isActive}, Texture: {(paintingImages[i].texture != null ? paintingImages[i].texture.name : "None")}");
         }
@@ -269,7 +299,7 @@ public class QuestionUI : MonoBehaviour
         resultText.text = $"Score: {score}/2";
 
         // Submit score to leaderboard
-        string playerName = $"Team_{System.DateTime.Now.Ticks % 10000:D4}"; // e.g., Player_1234
+        string playerName = $"Team_{System.DateTime.Now.Ticks % 10000:D4}"; // e.g., Team_1234
         if (LeaderboardManager.Instance != null)
         {
             LeaderboardManager.Instance.SubmitScore(playerName, score, (success) =>

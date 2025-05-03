@@ -2,6 +2,8 @@ using UnityEngine;
 
 public class MXInkStylusHandler : MonoBehaviour
 {
+    public static MXInkStylusHandler Instance { get; private set; }
+
     [SerializeField] private GameObject mxInkModel;
     [SerializeField] private GameObject tip;
     [SerializeField] private GameObject clusterFront;
@@ -14,11 +16,12 @@ public class MXInkStylusHandler : MonoBehaviour
     public Color activeColor = Color.green;
     public Color doubleTapActiveColor = Color.cyan;
     public Color defaultColor = Color.black;
+    private Color drawingColor = Color.black;
 
     private StylusInputs stylus;
     private LineRenderer currentLine;
     private bool isDrawing;
-    
+
     // Defined action names.
     private const string MX_Ink_Pose_Right = "aim_right";
     private const string MX_Ink_Pose_Left = "aim_left";
@@ -33,6 +36,19 @@ public class MXInkStylusHandler : MonoBehaviour
     private float hapticClickDuration = 0.011f;
     private float hapticClickAmplitude = 1.0f;
 
+    void Awake()
+    {
+        if (Instance == null)
+        {
+            Instance = this;
+            DontDestroyOnLoad(gameObject);
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
+    }
+
     private void UpdatePose()
     {
         var leftDevice = OVRPlugin.GetCurrentInteractionProfileName(OVRPlugin.Hand.HandLeft);
@@ -43,7 +59,7 @@ public class MXInkStylusHandler : MonoBehaviour
 
         stylus.isActive = stylusIsOnLeftHand || stylusIsOnRightHand;
         stylus.isOnRightHand = stylusIsOnRightHand;
-        
+
         string MX_Ink_Pose = stylus.isOnRightHand ? MX_Ink_Pose_Right : MX_Ink_Pose_Left;
 
         mxInkModel.SetActive(stylus.isActive);
@@ -100,8 +116,8 @@ public class MXInkStylusHandler : MonoBehaviour
         }
 
         stylus.any = stylus.tipValue > 0 || stylus.clusterFrontValue ||
-                        stylus.clusterMiddleValue > 0 || stylus.clusterBackValue ||
-                        stylus.clusterBackDoubleTapValue;
+                     stylus.clusterMiddleValue > 0 || stylus.clusterBackValue ||
+                     stylus.clusterBackDoubleTapValue;
 
         tip.GetComponent<MeshRenderer>().material.color = stylus.tipValue > 0 ? activeColor : defaultColor;
         clusterFront.GetComponent<MeshRenderer>().material.color = stylus.clusterFrontValue ? activeColor : defaultColor;
@@ -116,12 +132,11 @@ public class MXInkStylusHandler : MonoBehaviour
             clusterBack.GetComponent<MeshRenderer>().material.color = stylus.clusterBackDoubleTapValue ? doubleTapActiveColor : defaultColor;
         }
 
-
         if (stylus.clusterBackDoubleTapValue)
         {
             TriggerHapticClick();
         }
-        
+
         DrawLine();
     }
 
@@ -135,15 +150,15 @@ public class MXInkStylusHandler : MonoBehaviour
     {
         TriggerHapticPulse(hapticClickAmplitude, hapticClickDuration);
     }
-    
+
     private void DrawLine()
     {
         if (TimeManager.drawingCompleted)
-            {
-                isDrawing = false;
-                currentLine = null;
-                return;
-            }
+        {
+            isDrawing = false;
+            currentLine = null;
+            return;
+        }
         if (stylus.tipValue > 0)
         {
             if (!isDrawing)
@@ -152,8 +167,8 @@ public class MXInkStylusHandler : MonoBehaviour
                 currentLine = new GameObject("Line").AddComponent<LineRenderer>();
                 currentLine.positionCount = 0;
                 currentLine.material = new Material(Shader.Find("Sprites/Default"));
-                currentLine.startColor = defaultColor;
-                currentLine.endColor = defaultColor;
+                currentLine.startColor = drawingColor;
+                currentLine.endColor = drawingColor;
                 currentLine.startWidth = 0.0025f;
                 currentLine.endWidth = 0.0025f;
                 isDrawing = true;
@@ -167,8 +182,18 @@ public class MXInkStylusHandler : MonoBehaviour
         {
             // Stop drawing
             isDrawing = false;
-            currentLine = null; 
+            currentLine = null;
         }
     }
 
+    public void SetDrawingColor(Color color)
+    {
+        drawingColor = color;
+        if (currentLine != null)
+        {
+            currentLine.startColor = color;
+            currentLine.endColor = color;
+        }
+        Debug.Log($"MX Ink drawing color set to: {color}");
+    }
 }
