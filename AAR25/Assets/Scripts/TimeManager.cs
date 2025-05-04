@@ -134,7 +134,7 @@ public class TimeManager : MonoBehaviour
     public static float selectedTime = 5f; // Set by DifficultySelector, default to 60
     public static float difficultyPoints = 1.5f;
     private float timeRemaining;
-    public GameObject paintingUI; // Optional placeholder, can be removed
+    //public GameObject paintingUI; // Optional placeholder, can be removed
     public AudioManager audioManager;
     public GameObject promptUI;
     public GameObject questionUI;
@@ -184,7 +184,7 @@ public class TimeManager : MonoBehaviour
         Debug.Log($"TimeManager: Drawing phase started for Phase {currentPhase + 1}, timeRemaining: {timeRemaining}");
 
         // paintingUI is optional; remove if not used
-        if (paintingUI != null) paintingUI.SetActive(true);
+        //if (paintingUI != null) paintingUI.SetActive(true);
         if (promptUI != null) promptUI.SetActive(false);
         if (questionUI != null) questionUI.SetActive(false);
         if (paintingInsp[currentPhase] != null)
@@ -219,21 +219,21 @@ public class TimeManager : MonoBehaviour
                 drawingCompleted = true;
                 OnDrawingPhaseEnded?.Invoke();
                 Debug.Log($"TimeManager: Drawing phase ended for Phase {currentPhase + 1}");
-                StoreDrawing();
+                //StoreDrawing();
                 NextPhase();
             }
         }
     }
 
-    void StoreDrawing()
-    {
-        if (MXInkStylusHandler.Instance != null)
-        {
-            MXInkStylusHandler.Instance.SaveDrawing(); // Trigger save from stylus handler
-            Debug.Log($"TimeManager: Saved drawing for Phase {currentPhase + 1}");
-        }
-        if (paintingUI != null) paintingUI.SetActive(false); // Optional
-    }
+    // void StoreDrawing()
+    // {
+    //     if (MXInkStylusHandler.Instance != null)
+    //     {
+    //         MXInkStylusHandler.Instance.SaveDrawing(); // Trigger save from stylus handler
+    //         Debug.Log($"TimeManager: Saved drawing for Phase {currentPhase + 1}");
+    //     }
+    //     //if (paintingUI != null) paintingUI.SetActive(false); // Optional
+    // }
 
     void NextPhase()
     {

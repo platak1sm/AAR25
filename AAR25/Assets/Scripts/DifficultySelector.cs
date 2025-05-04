@@ -91,12 +91,15 @@ public class DifficultySelector : MonoBehaviour
         {
             case 0: // Easy
                 TimeManager.selectedTime = 30f; // 1.5 minutes
+                TimeManager.difficultyPoints = 1f;
                 break;
             case 1: // Medium
                 TimeManager.selectedTime = 20f; // 1 minute
+                TimeManager.difficultyPoints = 1.5f;
                 break;
             case 2: // Difficult
                 TimeManager.selectedTime = 10f; // 0.5 minutes
+                TimeManager.difficultyPoints = 2f;
                 break;
         }
         Debug.Log($"DifficultySelector: Set TimeManager.selectedTime to {TimeManager.selectedTime} seconds");

@@ -199,6 +199,7 @@
 // }
 
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class MXInkStylusHandler : MonoBehaviour
 {
@@ -218,7 +219,7 @@ public class MXInkStylusHandler : MonoBehaviour
     public Color defaultColor = Color.black;
     private Color drawingColor = Color.black;
 
-    private StylusInputs stylus;
+    private StylusInputs stylus; // Initialized in Awake
     private LineRenderer currentLine;
     private bool isDrawing;
 
@@ -240,6 +241,24 @@ public class MXInkStylusHandler : MonoBehaviour
     private int textureWidth = 512;
     private int textureHeight = 512;
 
+    // Use the provided StylusInputs struct
+    public struct StylusInputs
+    {
+        public float tipValue;
+        public bool clusterFrontValue;
+        public float clusterMiddleValue;
+        public bool clusterBackValue;
+        public bool clusterBackDoubleTapValue;
+        public bool any;
+        public Pose inkingPose;
+        public bool positionIsTracked;
+        public bool positionIsValid;
+        public float batteryLevel;
+        public bool isActive;
+        public bool isOnRightHand;
+        public bool docked;
+    }
+
     void Awake()
     {
         if (Instance == null)
@@ -252,10 +271,41 @@ public class MXInkStylusHandler : MonoBehaviour
             Destroy(gameObject);
         }
 
+        // Initialize stylus with default values
+        stylus = new StylusInputs
+        {
+            tipValue = 0f,
+            clusterFrontValue = false,
+            clusterMiddleValue = 0f,
+            clusterBackValue = false,
+            clusterBackDoubleTapValue = false,
+            any = false,
+            inkingPose = new Pose(),
+            positionIsTracked = false,
+            positionIsValid = false,
+            batteryLevel = 0f,
+            isActive = false,
+            isOnRightHand = false,
+            docked = false
+        };
+
         // Initialize texture for simulation
         drawingTexture = new Texture2D(textureWidth, textureHeight, TextureFormat.RGB24, false);
         drawingTexture.SetPixels32(new Color32[textureWidth * textureHeight]); // Clear to black
         drawingTexture.Apply();
+
+        Debug.Log("MXInkStylusHandler: Initialized stylus and drawing texture.");
+    }
+
+    private void Start()
+    {
+        // Removed IsInitialized check due to missing definition
+        // Verify OpenXR plugin status indirectly via runtime behavior
+        Debug.Log("MXInk: Starting - OpenXR plugin assumed active.");
+
+        // Check Meta Quest firmware version (requires Meta XR Core SDK)
+        string firmwareVersion = OVRPlugin.version.ToString();
+        Debug.Log($"MXInk: Meta Quest firmware version: {firmwareVersion}");
     }
 
     private void UpdatePose()
@@ -263,11 +313,16 @@ public class MXInkStylusHandler : MonoBehaviour
         var leftDevice = OVRPlugin.GetCurrentInteractionProfileName(OVRPlugin.Hand.HandLeft);
         var rightDevice = OVRPlugin.GetCurrentInteractionProfileName(OVRPlugin.Hand.HandRight);
 
-        bool stylusIsOnLeftHand = leftDevice.Contains("logitech");
-        bool stylusIsOnRightHand = rightDevice.Contains("logitech");
+        Debug.Log($"MXInk: Left Device: {leftDevice}, Right Device: {rightDevice}");
 
+        bool stylusIsOnLeftHand = leftDevice != null && leftDevice.Contains("logitech");
+        bool stylusIsOnRightHand = rightDevice != null && rightDevice.Contains("logitech");
+
+        // Update stylus struct
         stylus.isActive = stylusIsOnLeftHand || stylusIsOnRightHand;
         stylus.isOnRightHand = stylusIsOnRightHand;
+
+        Debug.Log($"MXInk: Stylus Active: {stylus.isActive}, On Right Hand: {stylus.isOnRightHand}");
 
         string MX_Ink_Pose = stylus.isOnRightHand ? MX_Ink_Pose_Right : MX_Ink_Pose_Left;
 
@@ -275,12 +330,21 @@ public class MXInkStylusHandler : MonoBehaviour
         rightController.SetActive(!stylus.isOnRightHand || !stylus.isActive);
         leftController.SetActive(stylus.isOnRightHand || !stylus.isActive);
 
-        if (OVRPlugin.GetActionStatePose(MX_Ink_Pose, out OVRPlugin.Posef handPose))
+        if (stylus.isActive && OVRPlugin.GetActionStatePose(MX_Ink_Pose, out OVRPlugin.Posef handPose))
         {
             transform.localPosition = handPose.Position.FromFlippedZVector3f();
             transform.localRotation = handPose.Orientation.FromFlippedZQuatf();
             stylus.inkingPose.position = transform.localPosition;
             stylus.inkingPose.rotation = transform.localRotation;
+            stylus.positionIsTracked = true;
+            stylus.positionIsValid = true;
+            Debug.Log($"MXInk: Pose updated - Position: {transform.localPosition}, Rotation: {transform.localRotation}");
+        }
+        else if (stylus.isActive)
+        {
+            Debug.LogError($"MXInk: Failed to get pose for action: {MX_Ink_Pose}");
+            stylus.positionIsTracked = false;
+            stylus.positionIsValid = false;
         }
     }
 
@@ -289,39 +353,49 @@ public class MXInkStylusHandler : MonoBehaviour
         OVRInput.Update();
         UpdatePose();
 
+        if (!stylus.isActive)
+        {
+            Debug.LogWarning("MXInk: Stylus is not active. Skipping input processing.");
+            return;
+        }
+
         if (!OVRPlugin.GetActionStateFloat(MX_Ink_TipForce, out stylus.tipValue))
         {
-            //Debug.LogError($"MX_Ink: Error getting action name: {MX_Ink_TipForce}");
+            Debug.LogError($"MXInk: Error getting action name: {MX_Ink_TipForce}");
+        }
+        else
+        {
+            Debug.Log($"MXInk: Tip Force: {stylus.tipValue}");
         }
 
         if (!OVRPlugin.GetActionStateFloat(MX_Ink_MiddleForce, out stylus.clusterMiddleValue))
         {
-            //Debug.LogError($"MX_Ink: Error getting action name: {MX_Ink_MiddleForce}");
+            Debug.LogError($"MXInk: Error getting action name: {MX_Ink_MiddleForce}");
         }
 
         if (!OVRPlugin.GetActionStateBoolean(MX_Ink_ClusterFront, out stylus.clusterFrontValue))
         {
-            //Debug.LogError($"MX_Ink: Error getting action name: {MX_Ink_ClusterFront}");
+            Debug.LogError($"MXInk: Error getting action name: {MX_Ink_ClusterFront}");
         }
 
         if (!OVRPlugin.GetActionStateBoolean(MX_Ink_ClusterBack, out stylus.clusterBackValue))
         {
-            //Debug.LogError($"MX_Ink: Error getting action name: {MX_Ink_ClusterBack}");
+            Debug.LogError($"MXInk: Error getting action name: {MX_Ink_ClusterBack}");
         }
 
         if (!OVRPlugin.GetActionStateBoolean(MX_Ink_ClusterFront_DoubleTap, out stylus.clusterBackDoubleTapValue))
         {
-            //Debug.LogError($"MX_Ink: Error getting action name: {MX_Ink_ClusterFront_DoubleTap}");
+            Debug.LogError($"MXInk: Error getting action name: {MX_Ink_ClusterFront_DoubleTap}");
         }
 
         if (!OVRPlugin.GetActionStateBoolean(MX_Ink_ClusterBack_DoubleTap, out stylus.clusterBackDoubleTapValue))
         {
-            //Debug.LogError($"MX_Ink: Error getting action name: {MX_Ink_ClusterBack_DoubleTap}");
+            Debug.LogError($"MXInk: Error getting action name: {MX_Ink_ClusterBack_DoubleTap}");
         }
 
         if (!OVRPlugin.GetActionStateBoolean(MX_Ink_Docked, out stylus.docked))
         {
-            //Debug.LogError($"MX_Ink: Error getting action name: {MX_Ink_Docked}");
+            Debug.LogError($"MXInk: Error getting action name: {MX_Ink_Docked}");
         }
 
         stylus.any = stylus.tipValue > 0 || stylus.clusterFrontValue ||
@@ -346,6 +420,12 @@ public class MXInkStylusHandler : MonoBehaviour
             TriggerHapticClick();
         }
 
+        string currentScene = SceneManager.GetActiveScene().name;
+        if (currentScene == "StartScene")
+        {
+            return;
+        }
+
         DrawAndSimulate();
     }
 
@@ -366,7 +446,7 @@ public class MXInkStylusHandler : MonoBehaviour
         {
             if (isDrawing)
             {
-                SaveDrawing();
+                //SaveDrawing();
                 isDrawing = false;
                 currentLine = null;
             }
@@ -390,41 +470,41 @@ public class MXInkStylusHandler : MonoBehaviour
             currentLine.positionCount++;
             currentLine.SetPosition(currentLine.positionCount - 1, stylus.inkingPose.position);
 
-            // Simulate drawing on texture (simplified)
-            Vector2 uv = new Vector2(
-                (stylus.inkingPose.position.x + 0.5f) * textureWidth, // Normalize to [0, 1] range
-                (stylus.inkingPose.position.y + 0.5f) * textureHeight
-            );
-            if (uv.x >= 0 && uv.x < textureWidth && uv.y >= 0 && uv.y < textureHeight)
-            {
-                drawingTexture.SetPixel((int)uv.x, (int)uv.y, drawingColor);
-                drawingTexture.Apply();
-            }
+            // // Simulate drawing on texture (simplified)
+            // Vector2 uv = new Vector2(
+            //     (stylus.inkingPose.position.x + 0.5f) * textureWidth, // Normalize to [0, 1] range
+            //     (stylus.inkingPose.position.y + 0.5f) * textureHeight
+            // );
+            // if (uv.x >= 0 && uv.x < textureWidth && uv.y >= 0 && uv.y < textureHeight)
+            // {
+            //     drawingTexture.SetPixel((int)uv.x, (int)uv.y, drawingColor);
+            //     drawingTexture.Apply();
+            // }
         }
         else if (isDrawing)
         {
-            SaveDrawing();
+            //SaveDrawing();
             isDrawing = false;
             currentLine = null;
         }
     }
 
-    public void SaveDrawing()
-    {
-        if (DrawingStorage.Instance != null && TimeManager.Instance != null)
-        {
-            int phase = TimeManager.Instance.CurrentPhase; // Use the public property
-            Texture2D savedTexture = new Texture2D(textureWidth, textureHeight);
-            savedTexture.SetPixels32(drawingTexture.GetPixels32()); // Copy the simulated drawing
-            savedTexture.Apply();
-            DrawingStorage.Instance.drawings[phase] = savedTexture;
-            Debug.Log($"MXInkStylusHandler: Saved simulated drawing for Phase {phase + 1}");
+    // public void SaveDrawing()
+    // {
+    //     if (DrawingStorage.Instance != null && TimeManager.Instance != null)
+    //     {
+    //         int phase = TimeManager.Instance.CurrentPhase; // Use the public property
+    //         Texture2D savedTexture = new Texture2D(textureWidth, textureHeight);
+    //         savedTexture.SetPixels32(drawingTexture.GetPixels32()); // Copy the simulated drawing
+    //         savedTexture.Apply();
+    //         DrawingStorage.Instance.drawings[phase] = savedTexture;
+    //         Debug.Log($"MXInkStylusHandler: Saved simulated drawing for Phase {phase + 1}");
 
-            // Clear for next phase
-            drawingTexture.SetPixels32(new Color32[textureWidth * textureHeight]); // Clear to black
-            drawingTexture.Apply();
-        }
-    }
+    //         // Clear for next phase
+    //         drawingTexture.SetPixels32(new Color32[textureWidth * textureHeight]); // Clear to black
+    //         drawingTexture.Apply();
+    //     }
+    // }
 
     public void SetDrawingColor(Color color)
     {
