@@ -595,6 +595,7 @@ public class QuestionUI : MonoBehaviour
             bool xPressed = xButtonAction.WasPressedThisFrame() || Input.GetKeyDown(KeyCode.X);
             if (xPressed)
             {
+                audioSource.Stop();
                 selectedAudioIndex = currentAudioIndex;
                 AudioClip[] correctClips = new AudioClip[] { correctAudioPhase1, correctAudioPhase2, correctAudioPhase3 };
                 isAudioCorrect[currentPhase] = audioClips[selectedAudioIndex] == correctClips[currentPhase];
