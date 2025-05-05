@@ -3,7 +3,7 @@ using UnityEngine;
 public class AudioManager : MonoBehaviour
 {
     public static AudioManager Instance { get; private set; }
-    public AudioClip sceneAudio; // Audio for first user (used in QuestionUI)
+    public AudioClip sceneAudio; 
     private AudioSource audioSource;
 
     void Awake()
@@ -14,18 +14,16 @@ public class AudioManager : MonoBehaviour
 
     void Start()
     {
-        // Ensure AudioSource
         audioSource = GetComponent<AudioSource>();
         if (audioSource == null)
         {
             audioSource = gameObject.AddComponent<AudioSource>();
         }
         audioSource.volume = 1.0f;
-        audioSource.spatialBlend = 0.0f; // 2D audio
-        audioSource.loop = true; // Loop for User 1
+        audioSource.spatialBlend = 0.0f; 
+        audioSource.loop = true; 
         audioSource.playOnAwake = false;
 
-        // Play sceneAudio (optional, since TimeManager will handle audio playback)
         if (sceneAudio != null)
         {
             audioSource.clip = sceneAudio;

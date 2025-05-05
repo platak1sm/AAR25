@@ -269,17 +269,6 @@ public class MXInkStylusHandler : MonoBehaviour
 
             currentLine.positionCount++;
             currentLine.SetPosition(currentLine.positionCount - 1, stylus.inkingPose.position);
-
-            // // Simulate drawing on texture (simplified)
-            // Vector2 uv = new Vector2(
-            //     (stylus.inkingPose.position.x + 0.5f) * textureWidth, // Normalize to [0, 1] range
-            //     (stylus.inkingPose.position.y + 0.5f) * textureHeight
-            // );
-            // if (uv.x >= 0 && uv.x < textureWidth && uv.y >= 0 && uv.y < textureHeight)
-            // {
-            //     drawingTexture.SetPixel((int)uv.x, (int)uv.y, drawingColor);
-            //     drawingTexture.Apply();
-            // }
         }
         else if (isDrawing)
         {
@@ -288,23 +277,6 @@ public class MXInkStylusHandler : MonoBehaviour
             currentLine = null;
         }
     }
-
-    // public void SaveDrawing()
-    // {
-    //     if (DrawingStorage.Instance != null && TimeManager.Instance != null)
-    //     {
-    //         int phase = TimeManager.Instance.CurrentPhase; // Use the public property
-    //         Texture2D savedTexture = new Texture2D(textureWidth, textureHeight);
-    //         savedTexture.SetPixels32(drawingTexture.GetPixels32()); // Copy the simulated drawing
-    //         savedTexture.Apply();
-    //         DrawingStorage.Instance.drawings[phase] = savedTexture;
-    //         Debug.Log($"MXInkStylusHandler: Saved simulated drawing for Phase {phase + 1}");
-
-    //         // Clear for next phase
-    //         drawingTexture.SetPixels32(new Color32[textureWidth * textureHeight]); // Clear to black
-    //         drawingTexture.Apply();
-    //     }
-    // }
 
     public void SetDrawingColor(Color color)
     {

@@ -19,7 +19,7 @@ public class ColorUIManager : MonoBehaviour
     private readonly GameObject[] borders = new GameObject[3];
     private bool isDrawingPhase = false;
     private float lastInputTime = 0f;
-    private const float INPUT_COOLDOWN = 1f; // Updated to 1 second wait time
+    private const float INPUT_COOLDOWN = 1f; 
 
     void Awake()
     {
@@ -33,7 +33,6 @@ public class ColorUIManager : MonoBehaviour
             Destroy(gameObject);
         }
 
-        // Setup Input Actions for OpenXR
         yButtonAction = new InputAction("YButton", InputActionType.Button, "<XRController>{LeftHand}/secondaryButton");
         xButtonAction = new InputAction("XButton", InputActionType.Button, "<XRController>{LeftHand}/primaryButton");
         yButtonAction.Enable();
@@ -42,28 +41,24 @@ public class ColorUIManager : MonoBehaviour
 
     void Start()
     {
-        // Validate references
         if (colorUIPanel == null) { Debug.LogError("colorUIPanel not assigned"); enabled = false; return; }
         if (blackBorder == null) { Debug.LogError("blackBorder not assigned"); enabled = false; return; }
         if (greenBorder == null) { Debug.LogError("greenBorder not assigned"); enabled = false; return; }
         if (redBorder == null) { Debug.LogError("redBorder not assigned"); enabled = false; return; }
 
-        // Initialize borders array
+
         borders[(int)DrawingColor.Black] = blackBorder;
         borders[(int)DrawingColor.Green] = greenBorder;
         borders[(int)DrawingColor.Red] = redBorder;
 
-        // Set initial state
         colorUIPanel.SetActive(false);
         foreach (GameObject border in borders)
         {
             border.SetActive(false);
         }
 
-        // Set default color
         UpdateDrawingColor();
 
-        // Subscribe to TimeManager events
         if (TimeManager.Instance != null)
         {
             TimeManager.Instance.OnDrawingPhaseStarted += () =>
@@ -156,14 +151,11 @@ public class ColorUIManager : MonoBehaviour
 
     private IEnumerator ShowColorFeedback()
     {
-        // Activate ColorUI and selected border
         colorUIPanel.SetActive(true);
         borders[(int)currentColor].SetActive(true);
 
-        // Wait 1 second
         yield return new WaitForSeconds(1f);
 
-        // Deactivate ColorUI and border
         colorUIPanel.SetActive(false);
         borders[(int)currentColor].SetActive(false);
     }

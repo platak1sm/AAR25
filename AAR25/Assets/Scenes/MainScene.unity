@@ -16066,6 +16066,9 @@ MonoBehaviour:
   - {fileID: 8300000, guid: 12c217bed6fd24217b2b936ce5d28933, type: 3}
   - {fileID: 8300000, guid: ec6ec655a23cd41edba3a7079f8a1f4b, type: 3}
   - {fileID: 8300000, guid: 7c918f5dc289840cf829d78f598114d9, type: 3}
+  lastAudioPanel: {fileID: 668581488}
+  leaderboardPanel: {fileID: 2382404425879619162}
+  leaderboardText: {fileID: 4840119900205891515}
   correctAudioPhase1: {fileID: 8300000, guid: 427dfdb43fa4646408e1060c76c89d49, type: 3}
   correctAudioPhase2: {fileID: 8300000, guid: ec6ec655a23cd41edba3a7079f8a1f4b, type: 3}
   correctAudioPhase3: {fileID: 8300000, guid: 12c217bed6fd24217b2b936ce5d28933, type: 3}
