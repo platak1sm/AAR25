@@ -90,15 +90,15 @@ public class DifficultySelector : MonoBehaviour
         switch (currentDifficultyIndex)
         {
             case 0: // Easy
-                TimeManager.selectedTime = 30f;//90f; // 1.5 minutes
+                TimeManager.selectedTime = 90f; // 1.5 minutes
                 TimeManager.difficultyPoints = 1f;
                 break;
             case 1: // Medium
-                TimeManager.selectedTime = 20f;//60f; // 1 minute
+                TimeManager.selectedTime = 60f; // 1 minute
                 TimeManager.difficultyPoints = 1.5f;
                 break;
             case 2: // Difficult
-                TimeManager.selectedTime = 10f;//30f; // 0.5 minutes
+                TimeManager.selectedTime = 30f; // 0.5 minutes
                 TimeManager.difficultyPoints = 2f;
                 break;
         }
